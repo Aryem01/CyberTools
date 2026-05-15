@@ -1,6 +1,10 @@
 *.db
 *.pem
-*.txt
+ma_cle.txt
 __pycache__/
 .venv/
 *.pyc
+users.db
+historique.db
+rsa_public.pem
+rsa_private.pem
