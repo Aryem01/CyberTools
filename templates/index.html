@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Cyber Tools</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- HEADER -->
+    <div style="display:flex; align-items:center; gap:20px;">
+            <div class="header-status">
+                <div class="status-dot"></div>
+                {{ username }}
+            </div>
+            <a href="/logout" style="color:var(--danger); font-size:0.85em; text-decoration:none; font-weight:500;">
+                🚪 Déconnexion
+            </a>
+        </div>
+
+    <!-- NAVIGATION -->
+    <div class="nav">
+        <button class="nav-btn active" data-tab="dashboard" onclick="showSection('dashboard', this)">📊 Dashboard</button>
+        <button class="nav-btn" data-tab="password" onclick="showSection('password', this)">🔑 Mots de passe</button>
+        <button class="nav-btn" data-tab="crypto" onclick="showSection('crypto', this)">🔒 Chiffrement</button>
+        <button class="nav-btn" data-tab="scanner" onclick="showSection('scanner', this)">🌐 Scanner</button>
+        <button class="nav-btn" data-tab="historique" onclick="showSection('historique', this)">📋 Historique</button>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- SECTION DASHBOARD -->
+        <div class="section active" id="section-dashboard">
+            <div class="section-title">📊 Dashboard</div>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:15px; margin-bottom:25px;">
+                <div class="card" style="text-align:center; padding:20px;">
+                    <p style="color:var(--text-muted); font-size:0.8em; text-transform:uppercase; letter-spacing:1px;">Total actions</p>
+                    <p style="font-size:2.5em; font-weight:700; color:var(--accent); margin:10px 0;">{{ stats.total }}</p>
+                    <p style="color:var(--text-muted); font-size:0.8em;">depuis le début</p>
+                </div>
+                <div class="card" style="text-align:center; padding:20px;">
+                    <p style="color:var(--text-muted); font-size:0.8em; text-transform:uppercase; letter-spacing:1px;">Aujourd'hui</p>
+                    <p style="font-size:2.5em; font-weight:700; color:var(--accent-3); margin:10px 0;">{{ stats.aujourd_hui }}</p>
+                    <p style="color:var(--text-muted); font-size:0.8em;">actions today</p>
+                </div>
+                <div class="card" style="text-align:center; padding:20px;">
+                    <p style="color:var(--text-muted); font-size:0.8em; text-transform:uppercase; letter-spacing:1px;">Outils utilisés</p>
+                    <p style="font-size:2.5em; font-weight:700; color:var(--accent-2); margin:10px 0;">{{ stats.par_action | length }}</p>
+                    <p style="color:var(--text-muted); font-size:0.8em;">types différents</p>
+                </div>
+            </div>
+
+            {% if stats.derniere %}
+            <div class="card" style="margin-bottom:20px;">
+                <p style="color:var(--text-muted); font-size:0.8em; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Dernière action</p>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <p style="font-size:1.1em; font-weight:600;">{{ stats.derniere[0] }}</p>
+                    <p style="color:var(--text-muted); font-size:0.85em; font-family:'JetBrains Mono', monospace;">{{ stats.derniere[1] }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card">
+                <h2 style="color:var(--accent); font-size:1.1em; margin-bottom:20px;">📊 Répartition des actions</h2>
+                {% if stats.par_action %}
+                <div style="max-width:350px; margin:0 auto;">
+                    <canvas id="statsChart"></canvas>
+                </div>
+                {% else %}
+                <p style="color:var(--text-muted); text-align:center; padding:20px;">Aucune statistique — commence à utiliser les outils !</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- SECTION MOT DE PASSE -->
+        <div class="section" id="section-password">
+            <div class="section-title">🔑 Gestion des mots de passe</div>
+
+            <div class="card">
+                <h2 style="color: var(--accent); margin-bottom:5px; font-size:1.1em;">Générateur</h2>
+                <p style="color: var(--text-muted); font-size:0.85em; margin-bottom:10px;">Crée un mot de passe fort et sécurisé</p>
+                <form method="POST" action="/generer">
+                    <label>Longueur</label>
+                    <input type="number" name="longueur" value="12" min="6" max="32">
+                    <label>Options</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label"><input type="checkbox" name="majuscules" checked> Majuscules</label>
+                        <label class="checkbox-label"><input type="checkbox" name="chiffres" checked> Chiffres</label>
+                        <label class="checkbox-label"><input type="checkbox" name="symboles"> Symboles</label>
+                    </div>
+                    <button type="submit">⚡ Générer</button>
+                </form>
+                {% if password %}
+                <div class="result">
+                    <p style="color: var(--text-muted); font-size:0.8em; margin-bottom:8px;">MOT DE PASSE GÉNÉRÉ</p>
+                    <p class="result-password">{{ password }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="card">
+                <h2 style="color: var(--accent); margin-bottom:5px; font-size:1.1em;">Vérificateur de force</h2>
+                <p style="color: var(--text-muted); font-size:0.85em; margin-bottom:10px;">Analyse la solidité d'un mot de passe</p>
+                <form method="POST" action="/verifier">
+                    <label>Mot de passe à analyser</label>
+                    <input type="text" name="mdp" placeholder="Entrez un mot de passe...">
+                    <button type="submit">🔍 Analyser</button>
+                </form>
+                {% if force %}
+                <div class="result">
+                    <p style="color: var(--text-muted); font-size:0.8em; margin-bottom:8px;">RÉSULTAT</p>
+                    <p style="font-size:1.1em; font-weight:600; margin-bottom:8px;">{{ force }}</p>
+                    <p style="color: var(--text-secondary); font-size:0.9em;">{{ conseil }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- SECTION CHIFFREMENT -->
+        <div class="section" id="section-crypto">
+            <div class="section-title">🔒 Chiffrement AES</div>
+
+            <div class="card">
+                <h2 style="color: var(--accent); margin-bottom:5px; font-size:1.1em;">Générer une clé</h2>
+                <p style="color: var(--text-muted); font-size:0.85em; margin-bottom:10px;">Crée une clé AES unique pour chiffrer tes messages</p>
+                <form method="POST" action="/generer-cle">
+                    <button type="submit">🔑 Générer une clé AES</button>
+                </form>
+                {% if cle %}
+                <div class="result">
+                    <p style="color: var(--text-muted); font-size:0.8em; margin-bottom:8px;">CLÉ GÉNÉRÉE</p>
+                    <p class="result-key" id="cle-text">{{ cle }}</p>
+                    <p style="color: var(--warning); font-size:0.8em; margin-top:10px;">⚠️ Sauvegardée dans ma_cle.txt</p>
+                    <button type="button" class="btn-secondary" onclick="copierCle()">📋 Copier la clé</button>
+                    <span id="copie-msg" class="copy-msg" style="display:none;">✅ Copié !</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="card">
+                <h2 style="color: var(--accent); margin-bottom:5px; font-size:1.1em;">Chiffrer un message</h2>
+                <form method="POST" action="/chiffrer">
+                    <label>Message secret</label>
+                    <input type="text" name="texte" placeholder="Ton message confidentiel...">
+                    <label>Clé AES</label>
+                    <input type="text" name="cle" placeholder="Colle ta clé ici...">
+                    <div class="checkbox-group" style="margin-top:12px;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="auto_cle"> Générer une clé automatiquement
+                        </label>
+                    </div>
+                    <button type="submit">🔒 Chiffrer</button>
+                </form>
+                {% if texte_chiffre %}
+                <div class="result">
+                    <p style="color: var(--text-muted); font-size:0.8em; margin-bottom:8px;">MESSAGE CHIFFRÉ</p>
+                    <p class="result-encrypted">{{ texte_chiffre }}</p>
+                    {% if cle_utilisee %}
+                    <p style="color: var(--text-muted); font-size:0.8em; margin-top:15px; margin-bottom:5px;">CLÉ UTILISÉE</p>
+                    <p class="result-key">{{ cle_utilisee }}</p>
+                    <p style="color: var(--accent-3); font-size:0.8em; margin-top:8px;">✅ Clé sauvegardée dans ma_cle.txt</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="card">
+                <h2 style="color: var(--accent); margin-bottom:5px; font-size:1.1em;">Déchiffrer un message</h2>
+                <form method="POST" action="/dechiffrer">
+                    <label>Message chiffré</label>
+                    <input type="text" name="texte_chiffre" placeholder="Colle le texte chiffré...">
+                    <label>Clé AES</label>
+                    <input type="text" name="cle" placeholder="Colle ta clé ici...">
+                    <button type="submit">🔓 Déchiffrer</button>
+                </form>
+                {% if texte_dechiffre %}
+                <div class="result">
+                    <p style="color: var(--text-muted); font-size:0.8em; margin-bottom:8px;">MESSAGE DÉCHIFFRÉ</p>
+                    <p style="font-size:1.1em; color: var(--accent-3); font-weight:600;">{{ texte_dechiffre }}</p>
+                </div>
+                {% endif %}
+            </div>
+            <!-- Séparateur -->
+            <div style="display:flex; align-items:center; gap:15px; margin:10px 0;">
+                <div style="flex:1; height:1px; background:var(--border);"></div>
+                <span style="color:var(--text-muted); font-size:0.85em;">🔐 RSA</span>
+                <div style="flex:1; height:1px; background:var(--border);"></div>
+            </div>
+
+            <!-- Générer clés RSA -->
+            <div class="card">
+                <h2 style="color:var(--accent); margin-bottom:5px; font-size:1.1em;">Générer clés RSA</h2>
+                <p style="color:var(--text-muted); font-size:0.85em; margin-bottom:10px;">Génère une paire de clés RSA 2048 bits — clé publique pour chiffrer, clé privée pour déchiffrer</p>
+                <form method="POST" action="/generer-cles-rsa">
+                    <button type="submit">🔐 Générer les clés RSA</button>
+                </form>
+                {% if rsa_pub %}
+                <div class="result">
+                    <p style="color:var(--text-muted); font-size:0.8em; margin-bottom:5px;">CLÉ PUBLIQUE</p>
+                    <p class="result-key" id="rsa-pub-text">{{ rsa_pub }}</p>
+                    <button type="button" class="btn-secondary" onclick="copier('rsa-pub-text', 'msg-pub')">📋 Copier clé publique</button>
+                    <span id="msg-pub" class="copy-msg" style="display:none;">✅ Copié !</span>
+
+                    <p style="color:var(--text-muted); font-size:0.8em; margin-top:15px; margin-bottom:5px;">CLÉ PRIVÉE</p>
+                    <p class="result-key" id="rsa-priv-text">{{ rsa_priv }}</p>
+                    <button type="button" class="btn-secondary" onclick="copier('rsa-priv-text', 'msg-priv')">📋 Copier clé privée</button>
+                    <span id="msg-priv" class="copy-msg" style="display:none;">✅ Copié !</span>
+
+                    <p style="color:var(--accent-3); font-size:0.8em; margin-top:10px;">✅ Clés sauvegardées dans rsa_public.pem et rsa_private.pem</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Chiffrer RSA -->
+            <div class="card">
+                <h2 style="color:var(--accent); margin-bottom:5px; font-size:1.1em;">Chiffrer avec RSA</h2>
+                <form method="POST" action="/chiffrer-rsa">
+                    <label>Message à chiffrer</label>
+                    <input type="text" name="texte_rsa" placeholder="Ton message secret...">
+                    <label>Clé publique RSA</label>
+                    <textarea name="cle_pub_rsa" placeholder="Colle ta clé publique ici..."
+                        style="width:100%; background:var(--bg-secondary); border:1px solid var(--border);
+                        border-radius:10px; color:var(--text-primary); padding:12px; font-size:0.8em;
+                        font-family:'JetBrains Mono', monospace; height:100px; resize:vertical; margin-top:5px;"></textarea>
+                    <button type="submit">🔐 Chiffrer RSA</button>
+                </form>
+                {% if rsa_chiffre %}
+                <div class="result">
+                    <p style="color:var(--text-muted); font-size:0.8em; margin-bottom:8px;">MESSAGE CHIFFRÉ RSA</p>
+                    <p class="result-encrypted" id="rsa-chiffre-text">{{ rsa_chiffre }}</p>
+                    <button type="button" class="btn-secondary" onclick="copier('rsa-chiffre-text', 'msg-chiffre')">📋 Copier</button>
+                    <span id="msg-chiffre" class="copy-msg" style="display:none;">✅ Copié !</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Déchiffrer RSA -->
+            <div class="card">
+                <h2 style="color:var(--accent); margin-bottom:5px; font-size:1.1em;">Déchiffrer avec RSA</h2>
+                <form method="POST" action="/dechiffrer-rsa">
+                    <label>Message chiffré RSA</label>
+                    <input type="text" name="texte_chiffre_rsa" placeholder="Colle le message chiffré...">
+                    <label>Clé privée RSA</label>
+                    <textarea name="cle_priv_rsa" placeholder="Colle ta clé privée ici..."
+                        style="width:100%; background:var(--bg-secondary); border:1px solid var(--border);
+                        border-radius:10px; color:var(--text-primary); padding:12px; font-size:0.8em;
+                        font-family:'JetBrains Mono', monospace; height:100px; resize:vertical; margin-top:5px;"></textarea>
+                    <button type="submit">🔓 Déchiffrer RSA</button>
+                </form>
+                {% if rsa_dechiffre %}
+                <div class="result">
+                    <p style="color:var(--text-muted); font-size:0.8em; margin-bottom:8px;">MESSAGE DÉCHIFFRÉ RSA</p>
+                    <p style="font-size:1.1em; color:var(--accent-3); font-weight:600;">{{ rsa_dechiffre }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- SECTION SCANNER -->
+        <div class="section" id="section-scanner">
+            <div class="section-title">🌐 Scanner de ports</div>
+
+            <div class="card">
+                <h2 style="color: var(--accent); margin-bottom:5px; font-size:1.1em;">Analyse réseau</h2>
+                <p style="color: var(--text-muted); font-size:0.85em; margin-bottom:10px;">Détecte les ports ouverts — max 500 ports</p>
+                <label>Adresse IP</label>
+                <input type="text" id="ip" value="192.168.1.4">
+                <div style="display:flex; gap:15px;">
+                    <div style="flex:1;">
+                        <label>Port début</label>
+                        <input type="number" id="port-debut" value="1" min="1" max="65535">
+                    </div>
+                    <div style="flex:1;">
+                        <label>Port fin</label>
+                        <input type="number" id="port-fin" value="500" min="1" max="65535">
+                    </div>
+                </div>
+                <button onclick="lancerScan()">🔍 Lancer le scan</button>
+
+                <div id="scan-status" style="display:none;" class="scan-status">
+                    <div class="spinner"></div>
+                    <span>Scan en cours sur <strong id="progress"></strong>...</span>
+                </div>
+
+                <div id="scan-result" style="display:none;" class="result">
+                    <p style="color: var(--text-muted); font-size:0.8em; margin-bottom:5px;">PORTS OUVERTS DÉTECTÉS</p>
+                    <p style="font-size:1.3em; font-weight:700; color: var(--accent-3);" id="nb-ports"></p>
+                    <table>
+                        <tr><th>Port</th><th>Service</th><th>Statut</th></tr>
+                        <tbody id="ports-table"></tbody>
+                    </table>
+                </div>
+
+                <div id="scan-vide" style="display:none;" class="result">
+                    <p style="color: var(--text-muted);">❌ Aucun port ouvert trouvé</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION HISTORIQUE -->
+        <div class="section" id="section-historique">
+            <div class="section-title">📋 Historique</div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <div>
+                        <h2 style="color: var(--accent); font-size:1.1em;">Toutes les actions</h2>
+                        <p style="color: var(--text-muted); font-size:0.85em;">Les 50 dernières actions</p>
+                    </div>
+                    {% if historique %}
+                    <form method="POST" action="/vider-historique">
+                        <button type="submit" class="btn-danger">🗑️ Vider</button>
+                    </form>
+                    {% endif %}
+                </div>
+
+                {% if historique %}
+                <table>
+                    <tr><th>#</th><th>Action</th><th>Détails</th><th>Date</th></tr>
+                    {% for h in historique %}
+                    <tr>
+                        <td style="color: var(--text-muted); font-size:0.8em;">{{ h[0] }}</td>
+                        <td class="history-action">{{ h[1] }}</td>
+                        <td style="color: var(--text-muted); font-size:0.85em;">{{ h[2] }}</td>
+                        <td class="history-date">{{ h[3] }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+                {% else %}
+                <p style="color: var(--text-muted); text-align:center; padding:30px;">Aucune action enregistrée</p>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+  function showSection(name, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('section-' + name).classList.add('active');
+    btn.classList.add('active');
+
+    // Cacher et vider les résultats RSA quand on quitte crypto
+    if (name !== 'crypto') {
+        fetch('/clear-rsa', { method: 'POST' });
+        ['rsa-pub-text', 'rsa-priv-text', 'rsa-chiffre-text'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.closest('.result').style.display = 'none';
+        });
+    }
+ }
+
+    window.onload = function() {
+        const activeTab = "{{ active_tab }}";
+        const btn = document.querySelector(`.nav-btn[data-tab="${activeTab}"]`);
+        if (btn) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('section-' + activeTab).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        const ctx = document.getElementById('statsChart');
+        if (ctx) {
+            const labels = {{ stats.par_action | map(attribute=0) | list | tojson }};
+            const data = {{ stats.par_action | map(attribute=1) | list | tojson }};
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            'rgba(14, 165, 233, 0.8)',
+                            'rgba(99, 102, 241, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                        ],
+                        borderColor: '#0a1628',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#94a3b8',
+                                padding: 15,
+                                font: { family: 'Inter', size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+function copier(elementId, msgId) {
+    const texte = document.getElementById(elementId).innerText;
+    navigator.clipboard.writeText(texte).then(() => {
+        const msg = document.getElementById(msgId);
+        msg.style.display = 'inline-flex';
+        setTimeout(() => msg.style.display = 'none', 2000);
+    });
+}
+
+function copierCle() {
+    copier('cle-text', 'copie-msg');
+}
+
+    function lancerScan() {
+        const ip = document.getElementById('ip').value;
+        const portDebut = document.getElementById('port-debut').value;
+        const portFin = document.getElementById('port-fin').value;
+
+        document.getElementById('scan-status').style.display = 'flex';
+        document.getElementById('scan-result').style.display = 'none';
+        document.getElementById('scan-vide').style.display = 'none';
+        document.getElementById('progress').innerText = ip + ' ports ' + portDebut + '-' + portFin;
+
+        const formData = new FormData();
+        formData.append('ip', ip);
+        formData.append('port_debut', portDebut);
+        formData.append('port_fin', portFin);
+
+        fetch('/scanner', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('scan-status').style.display = 'none';
+            if (data.ports.length === 0) {
+                document.getElementById('scan-vide').style.display = 'block';
+            } else {
+                document.getElementById('nb-ports').innerText = data.ports.length + ' ports ouverts';
+                const tbody = document.getElementById('ports-table');
+                tbody.innerHTML = '';
+                data.ports.forEach(p => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="port-number">${p.port}</td>
+                            <td>${p.service}</td>
+                            <td><span class="badge badge-success">OUVERT</span></td>
+                        </tr>`;
+                });
+                document.getElementById('scan-result').style.display = 'block';
+            }
+        })
+        .catch(err => {
+            document.getElementById('scan-status').style.display = 'none';
+            alert('Erreur : ' + err);
+        });
+    }
+    </script>
+
+</body>
+</html>

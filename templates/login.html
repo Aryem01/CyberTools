@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Cyber Tools - Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div style="min-height:100vh; display:flex; align-items:center; justify-content:center;">
+        <div style="width:100%; max-width:400px; padding:20px;">
+
+            <div style="text-align:center; margin-bottom:40px;">
+                <h1 style="font-size:2em; color:var(--accent); letter-spacing:2px;">🔐 CYBERTOOLS</h1>
+                <p style="color:var(--text-muted); margin-top:8px;">Accès sécurisé</p>
+            </div>
+
+            <div class="card">
+                <!-- Tabs -->
+                <div style="display:flex; margin-bottom:25px; border-bottom:1px solid var(--border);">
+                    <button onclick="switchTab('login')" id="tab-login"
+                        style="flex:1; background:none; border:none; color:var(--accent); padding:10px; font-size:0.95em; font-weight:600; border-bottom:2px solid var(--accent); cursor:pointer; width:auto; margin:0; border-radius:0;">
+                        Connexion
+                    </button>
+                    <button onclick="switchTab('register')" id="tab-register"
+                        style="flex:1; background:none; border:none; color:var(--text-muted); padding:10px; font-size:0.95em; cursor:pointer; border-bottom:2px solid transparent; width:auto; margin:0; border-radius:0;">
+                        Créer un compte
+                    </button>
+                    <button onclick="switchTab('reset')" id="tab-reset"
+                        style="flex:1; background:none; border:none; color:var(--text-muted); padding:10px; font-size:0.95em; cursor:pointer; border-bottom:2px solid transparent; width:auto; margin:0; border-radius:0;">
+                        Reset
+                    </button>
+                </div>
+
+                {% if message %}
+                <div style="padding:12px; border-radius:8px; margin-bottom:20px;
+                    background: {{ 'rgba(16,185,129,0.1)' if success else 'rgba(239,68,68,0.1)' }};
+                    border: 1px solid {{ 'rgba(16,185,129,0.3)' if success else 'rgba(239,68,68,0.3)' }};
+                    color: {{ 'var(--accent-3)' if success else 'var(--danger)' }};">
+                    {{ message }}
+                </div>
+                {% endif %}
+
+                <!-- Login Form -->
+                <div id="form-login">
+                    <form method="POST" action="/login">
+                        <input type="hidden" name="action" value="login">
+                        <label>Nom d'utilisateur</label>
+                        <input type="text" name="username" placeholder="Ton nom d'utilisateur" autofocus>
+                        <label>Mot de passe</label>
+                        <input type="password" name="password" placeholder="Ton mot de passe">
+                        <button type="submit" style="margin-top:25px;">🔓 Se connecter</button>
+                    </form>
+                    <p style="text-align:center; margin-top:15px;">
+                        <a href="#" onclick="switchTab('reset')"
+                           style="color:var(--text-muted); font-size:0.85em; text-decoration:none;">
+                           🔑 Mot de passe oublié ?
+                        </a>
+                    </p>
+                </div>
+
+                <!-- Register Form -->
+                <div id="form-register" style="display:none;">
+                    <form method="POST" action="/login">
+                        <input type="hidden" name="action" value="register">
+                        <label>Nom d'utilisateur</label>
+                        <input type="text" name="username" placeholder="Choisis un nom d'utilisateur">
+                        <label>Mot de passe</label>
+                        <input type="password" name="password" placeholder="Choisis un mot de passe fort">
+                        <button type="submit" style="margin-top:25px;">✅ Créer le compte</button>
+                    </form>
+                </div>
+
+                <!-- Reset Form -->
+                <div id="form-reset" style="display:none;">
+                    <form method="POST" action="/login">
+                        <input type="hidden" name="action" value="reset">
+                        <label>Nom d'utilisateur</label>
+                        <input type="text" name="username" placeholder="Ton nom d'utilisateur">
+                        <label>Nouveau mot de passe</label>
+                        <input type="password" name="password" placeholder="Nouveau mot de passe">
+                        <label>Confirmer</label>
+                        <input type="password" name="confirm" placeholder="Confirme le mot de passe">
+                        <button type="submit" style="margin-top:25px;">🔑 Réinitialiser</button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function switchTab(tab) {
+    ['login', 'register', 'reset'].forEach(t => {
+        document.getElementById('form-' + t).style.display = 'none';
+        document.getElementById('tab-' + t).style.color = 'var(--text-muted)';
+        document.getElementById('tab-' + t).style.borderBottom = '2px solid transparent';
+    });
+    document.getElementById('form-' + tab).style.display = 'block';
+    document.getElementById('tab-' + tab).style.color = 'var(--accent)';
+    document.getElementById('tab-' + tab).style.borderBottom = '2px solid var(--accent)';
+
+    // Vider tous les champs
+    document.querySelectorAll('input[type="text"], input[type="password"]').forEach(input => {
+        input.value = '';
+    });
+}
+    </script>
+
+</body>
+</html>
