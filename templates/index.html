@@ -414,48 +414,65 @@ function copierCle() {
     copier('cle-text', 'copie-msg');
 }
 
-    function lancerScan() {
-        const ip = document.getElementById('ip').value;
-        const portDebut = document.getElementById('port-debut').value;
-        const portFin = document.getElementById('port-fin').value;
+function lancerScan() {
+    const ip = document.getElementById('ip').value.trim();
+    const portDebut = document.getElementById('port-debut').value;
+    const portFin = document.getElementById('port-fin').value;
 
-        document.getElementById('scan-status').style.display = 'flex';
-        document.getElementById('scan-result').style.display = 'none';
-        document.getElementById('scan-vide').style.display = 'none';
-        document.getElementById('progress').innerText = ip + ' ports ' + portDebut + '-' + portFin;
+    // Reset affichage
+    document.getElementById('scan-status').style.display = 'flex';
+    document.getElementById('scan-result').style.display = 'none';
+    document.getElementById('scan-vide').innerHTML = '';
+    document.getElementById('scan-vide').style.display = 'none';
+    document.getElementById('progress').innerText = ip + ' ports ' + portDebut + '-' + portFin;
 
-        const formData = new FormData();
-        formData.append('ip', ip);
-        formData.append('port_debut', portDebut);
-        formData.append('port_fin', portFin);
+    const formData = new FormData();
+    formData.append('ip', ip);
+    formData.append('port_debut', portDebut);
+    formData.append('port_fin', portFin);
 
-        fetch('/scanner', { method: 'POST', body: formData })
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById('scan-status').style.display = 'none';
-            if (data.ports.length === 0) {
-                document.getElementById('scan-vide').style.display = 'block';
-            } else {
-                document.getElementById('nb-ports').innerText = data.ports.length + ' ports ouverts';
-                const tbody = document.getElementById('ports-table');
-                tbody.innerHTML = '';
-                data.ports.forEach(p => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td class="port-number">${p.port}</td>
-                            <td>${p.service}</td>
-                            <td><span class="badge badge-success">OUVERT</span></td>
-                        </tr>`;
-                });
-                document.getElementById('scan-result').style.display = 'block';
-            }
-        })
-        .catch(err => {
-            document.getElementById('scan-status').style.display = 'none';
-            alert('Erreur : ' + err);
-        });
-    }
-    </script>
+    fetch('/scanner', { method: 'POST', body: formData })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('scan-status').style.display = 'none';
+
+        // IP non autorisée
+        if (data.erreur) {
+            const div = document.getElementById('scan-vide');
+            div.style.display = 'block';
+            div.innerHTML = `
+                <p style="color:var(--danger); font-weight:600;">${data.erreur}</p>
+                <p style="color:var(--text-muted); font-size:0.85em; margin-top:8px;">
+                    💡 ${data.conseil}
+                </p>`;
+            return;
+        }
+
+        if (data.ports.length === 0) {
+            const div = document.getElementById('scan-vide');
+            div.style.display = 'block';
+            div.innerHTML = `<p style="color:var(--text-muted);">❌ Aucun port ouvert trouvé sur cette plage</p>`;
+        } else {
+            document.getElementById('nb-ports').innerText = data.ports.length + ' ports ouverts';
+            const tbody = document.getElementById('ports-table');
+            tbody.innerHTML = '';
+            data.ports.forEach(p => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="port-number">${p.port}</td>
+                        <td>${p.service}</td>
+                        <td><span class="badge badge-success">OUVERT</span></td>
+                    </tr>`;
+            });
+            document.getElementById('scan-result').style.display = 'block';
+        }
+    })
+    .catch(err => {
+        document.getElementById('scan-status').style.display = 'none';
+        alert('Erreur réseau : ' + err);
+    });
+}
+ </script>
 
 </body>
 </html>

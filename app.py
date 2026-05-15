@@ -1,11 +1,11 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import random
 import string
-from crypto import generer_cle, chiffrer, dechiffrer
+import ipaddress
+from crypto import generer_cle, chiffrer, dechiffrer, generer_cles_rsa, chiffrer_rsa, dechiffrer_rsa
 from port_scanner import scanner_ports
 from database import init_db, ajouter_action, get_historique, vider_historique, get_stats
 from auth import init_users, creer_compte, verifier_login, reset_password
-from crypto import generer_cle, chiffrer, dechiffrer, generer_cles_rsa, chiffrer_rsa, dechiffrer_rsa
 
 app = Flask(__name__)
 app.secret_key = 'cybertools_secret_2024'
@@ -14,41 +14,33 @@ init_users()
 
 def generer_password(longueur, majuscules, chiffres, symboles):
     caracteres = string.ascii_lowercase
-    if majuscules:
-        caracteres += string.ascii_uppercase
-    if chiffres:
-        caracteres += string.digits
-    if symboles:
-        caracteres += string.punctuation
+    if majuscules: caracteres += string.ascii_uppercase
+    if chiffres: caracteres += string.digits
+    if symboles: caracteres += string.punctuation
     return ''.join(random.choice(caracteres) for _ in range(longueur))
 
 def verifier_force(mdp):
     force = 0
     conseil = []
-    if len(mdp) >= 8:
-        force += 1
-    else:
-        conseil.append("Utilise au moins 8 caractères")
-    if any(c.isupper() for c in mdp):
-        force += 1
-    else:
-        conseil.append("Ajoute des majuscules")
-    if any(c.isdigit() for c in mdp):
-        force += 1
-    else:
-        conseil.append("Ajoute des chiffres")
-    if any(c in string.punctuation for c in mdp):
-        force += 1
-    else:
-        conseil.append("Ajoute des symboles (!@#...)")
-    if force == 4:
-        return "💪 Très fort", "Excellent mot de passe !"
-    elif force == 3:
-        return "👍 Fort", " • ".join(conseil)
-    elif force == 2:
-        return "⚠️ Moyen", " • ".join(conseil)
-    else:
-        return "❌ Faible", " • ".join(conseil)
+    if len(mdp) >= 8: force += 1
+    else: conseil.append("Utilise au moins 8 caractères")
+    if any(c.isupper() for c in mdp): force += 1
+    else: conseil.append("Ajoute des majuscules")
+    if any(c.isdigit() for c in mdp): force += 1
+    else: conseil.append("Ajoute des chiffres")
+    if any(c in string.punctuation for c in mdp): force += 1
+    else: conseil.append("Ajoute des symboles (!@#...)")
+    if force == 4: return "💪 Très fort", "Excellent mot de passe !"
+    elif force == 3: return "👍 Fort", " • ".join(conseil)
+    elif force == 2: return "⚠️ Moyen", " • ".join(conseil)
+    else: return "❌ Faible", " • ".join(conseil)
+
+def ip_autorisee(ip):
+    try:
+        addr = ipaddress.ip_address(ip)
+        return addr.is_loopback or addr.is_private
+    except ValueError:
+        return False
 
 def login_required(f):
     from functools import wraps
@@ -163,8 +155,20 @@ def route_scanner():
     ip = request.form.get('ip', '').strip()
     port_debut = int(request.form.get('port_debut') or 1)
     port_fin = int(request.form.get('port_fin') or 100)
+
+    # ── Vérification IP ───────────────────────────────
+    if not ip_autorisee(ip):
+        ajouter_action('⛔ Scan bloqué', f'IP non autorisée : {ip}')
+        return jsonify({
+            'erreur': f'⛔ IP "{ip}" non autorisée ! Seules les IPs locales sont permises.',
+            'conseil': 'IPs autorisées : 127.0.0.1 · 192.168.x.x · 10.x.x.x · 172.16.x.x',
+            'ports': []
+        })
+    # ─────────────────────────────────────────────────
+
     if port_fin - port_debut > 500:
         port_fin = port_debut + 500
+
     ports = scanner_ports(ip, port_debut, port_fin)
     ajouter_action('🌐 Scan de ports', f'IP: {ip} | Ports: {port_debut}-{port_fin} | Ouverts: {len(ports)}')
     return jsonify({'ports': ports, 'ip': ip})
@@ -213,13 +217,14 @@ def route_dechiffrer_rsa():
         rsa_priv=session.get('rsa_priv'),
         rsa_chiffre=session.get('rsa_chiffre')
     ))
+
 @app.route('/clear-rsa', methods=['POST'])
 @login_required
 def clear_rsa():
     session.pop('rsa_pub', None)
     session.pop('rsa_priv', None)
     session.pop('rsa_chiffre', None)
-    return render_template('index.html', **get_context(active_tab='crypto'))  
+    return render_template('index.html', **get_context(active_tab='crypto'))
 
 if __name__ == '__main__':
     app.run(debug=True)
